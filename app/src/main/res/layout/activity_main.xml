@@ -4,15 +4,106 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    android:background="@color/gray_900"
+    android:padding="@dimen/main_activity_layout_padding"
+    tools:context=".presentation.MainActivity">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hello World!"
+    <androidx.cardview.widget.CardView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:cardBackgroundColor="@color/gray_800"
+        app:cardCornerRadius="@dimen/main_activity_card_corner_radius"
+        app:cardElevation="@dimen/main_activity_card_elevation"
+        app:contentPadding="@dimen/main_activity_outer_carp_padding"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent">
 
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:cardBackgroundColor="@color/gray_600"
+            app:cardCornerRadius="@dimen/main_activity_card_corner_radius">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="@dimen/main_activity_player_layout_padding">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/tv_song_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/song_temp_name"
+                    android:textAlignment="center"
+                    android:textColor="@color/orange_50"
+                    android:textSize="@dimen/song_name_text_size" />
+
+                <androidx.appcompat.widget.AppCompatSeekBar
+                    android:id="@+id/song_progress_indicator"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/main_activity_elements_top_margin"
+                    android:progressBackgroundTint="@color/deep_orange_200"
+                    android:progressTint="@color/deep_orange_900"
+                    android:thumbTint="@color/red_900" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/main_activity_elements_top_margin"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <androidx.appcompat.widget.AppCompatImageButton
+                        android:id="@+id/player_btn_previous"
+                        android:layout_width="@dimen/main_activity_player_button_size"
+                        android:layout_height="@dimen/main_activity_player_button_size"
+                        android:layout_margin="@dimen/main_activity_player_button_margin"
+                        android:background="@color/gray_400"
+                        android:contentDescription="@string/previous_button_description"
+                        android:src="@drawable/previous"
+                        android:tint="@color/gray_900" />
+
+                    <androidx.appcompat.widget.AppCompatImageButton
+                        android:id="@+id/player_btn_play_pause"
+                        android:layout_width="@dimen/main_activity_player_button_size"
+                        android:layout_height="@dimen/main_activity_player_button_size"
+                        android:layout_margin="@dimen/main_activity_player_button_margin"
+                        android:background="@color/gray_400"
+                        android:contentDescription="@string/play_button_description"
+                        android:src="@drawable/play"
+                        android:tint="@color/gray_900" />
+
+                    <androidx.appcompat.widget.AppCompatImageButton
+                        android:id="@+id/player_btn_stop"
+                        android:layout_width="@dimen/main_activity_player_button_size"
+                        android:layout_height="@dimen/main_activity_player_button_size"
+                        android:layout_margin="@dimen/main_activity_player_button_margin"
+                        android:background="@color/gray_400"
+                        android:contentDescription="@string/stop_button_description"
+                        android:src="@drawable/stop"
+                        android:tint="@color/gray_900" />
+
+                    <androidx.appcompat.widget.AppCompatImageButton
+                        android:id="@+id/player_btn_next"
+                        android:layout_width="@dimen/main_activity_player_button_size"
+                        android:layout_height="@dimen/main_activity_player_button_size"
+                        android:layout_margin="@dimen/main_activity_player_button_margin"
+                        android:background="@color/gray_400"
+                        android:contentDescription="@string/next_button_description"
+                        android:src="@drawable/next"
+                        android:tint="@color/gray_900" />
+
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+    </androidx.cardview.widget.CardView>
 </androidx.constraintlayout.widget.ConstraintLayout>
