@@ -44,6 +44,7 @@ class MainActivity : AppCompatActivity() {
             val binder = service as MusicPlayerService.PlayerBinder
             musicPlayerService = binder.getService()
             serviceBound = true
+            jobsCreate()
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -72,7 +73,6 @@ class MainActivity : AppCompatActivity() {
         titleTV = binding.tvSongName
 
         playBtn.setOnClickListener {
-            jobsCreate()
             musicPlayerService?.playTrack()
         }
 
@@ -129,6 +129,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onResume() {
+
         super.onResume()
         val serviceIntent = Intent(this, MusicPlayerService::class.java)
         if (!isServiceRunning()) {
