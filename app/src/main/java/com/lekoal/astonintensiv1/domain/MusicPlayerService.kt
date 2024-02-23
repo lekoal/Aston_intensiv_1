@@ -23,18 +23,19 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import java.lang.Exception
 
 class MusicPlayerService : Service() {
 
     private var mediaPlayer: MediaPlayer? = null
     private val tracks = Tracks.get()
     private var trackIndex = 0
-    private var isPaused = false
 
     private var isServiceRunning: Boolean = false
 
     private val binder = PlayerBinder()
+
+    private val _currentState = MutableStateFlow(PlayerState.INITIAL)
+    val currentState: StateFlow<PlayerState> = _currentState
 
     private val _currentPosition = MutableStateFlow(0)
     val currentPosition: StateFlow<Int> = _currentPosition
@@ -50,9 +51,6 @@ class MusicPlayerService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        mediaPlayer?.setOnCompletionListener {
-            nextTrack()
-        }
     }
 
     companion object {
@@ -62,37 +60,10 @@ class MusicPlayerService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         isServiceRunning = true
         saveSPState()
-        when (intent?.action) {
-            PlayerState.PLAY.toString() -> {
-                isPaused = false
-                playTrack()
-            }
-
-            PlayerState.STOP.toString() -> {
-                isPaused = false
-                stopTrack()
-            }
-
-            PlayerState.PAUSE.toString() -> {
-                isPaused = true
-                pauseTrack()
-            }
-
-            PlayerState.NEXT.toString() -> {
-                isPaused = false
-                nextTrack()
-            }
-
-            PlayerState.PREV.toString() -> {
-                isPaused = false
-                prevTrack()
-            }
-            PlayerState.INITIAL.toString() -> {
-                initialService()
-            }
-        }
+        initialService()
         return START_STICKY
     }
+
     override fun onDestroy() {
         resetPlayer()
         isServiceRunning = false
@@ -110,40 +81,68 @@ class MusicPlayerService : Service() {
         startForeground(1, createNotification())
     }
 
-    private fun playTrack() {
-        if (!isPaused) {
-            startForeground(1, createNotification())
-            mediaPlayer = MediaPlayer.create(this, tracks[trackIndex].id)
+    fun playTrack() {
+        when (currentState.value) {
+            PlayerState.PLAY -> {
+                pauseTrack()
+                _currentState.value = PlayerState.PAUSE
+            }
+
+            PlayerState.PAUSE -> {
+                resumeTrack()
+                _currentState.value = PlayerState.PLAY
+            }
+
+            else -> {
+                mediaPlayer = MediaPlayer.create(this, tracks[trackIndex].id)
+                mediaPlayer?.start()
+                onCompleteTrack()
+                _currentState.value = PlayerState.PLAY
+            }
         }
-        mediaPlayer?.start()
         startUpdatingTrackData()
         startUpdatingCurrentPosition()
+        startForeground(1, createNotification())
     }
 
-    private fun stopTrack() {
-        resetPlayer()
-        try {
-            stopForeground(STOP_FOREGROUND_REMOVE)
-        } catch (e: Exception) {
-            e.printStackTrace()
+    fun stopTrack() {
+        if (currentState.value == PlayerState.PLAY ||
+            currentState.value == PlayerState.PAUSE) {
+            try {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            resetPlayer()
+            isServiceRunning = false
+            saveSPState()
+            _currentState.value = PlayerState.STOP
         }
-        isServiceRunning = false
-        saveSPState()
     }
 
     private fun pauseTrack() {
-        mediaPlayer?.pause()
+        if (currentState.value != PlayerState.PAUSE) {
+            mediaPlayer?.pause()
+        }
+        _currentState.value = PlayerState.PAUSE
     }
 
-    private fun nextTrack() {
-        trackIndex = if (trackIndex < tracks.size - 1) trackIndex + 1 else 0
-        if (mediaPlayer?.isPlaying == true) {
-            restartPlayer()
+    private fun resumeTrack() {
+        if (currentState.value == PlayerState.PAUSE) {
             mediaPlayer?.start()
-            startUpdatingTrackData()
-        } else {
-            restartPlayer()
+            onCompleteTrack()
         }
+        _currentState.value = PlayerState.RESUME
+    }
+
+    fun nextTrack() {
+        trackIndex = if (trackIndex < tracks.size - 1) trackIndex + 1 else 0
+        restartPlayer()
+        if (currentState.value == PlayerState.PLAY) {
+            mediaPlayer?.start()
+            onCompleteTrack()
+        }
+        startUpdatingTrackData()
         startForeground(1, createNotification())
     }
 
@@ -154,15 +153,14 @@ class MusicPlayerService : Service() {
         editor.apply()
     }
 
-    private fun prevTrack() {
+    fun prevTrack() {
         trackIndex = if (trackIndex > 0) trackIndex - 1 else tracks.size - 1
-        if (mediaPlayer?.isPlaying == true) {
-            restartPlayer()
+        restartPlayer()
+        if (currentState.value == PlayerState.PLAY) {
             mediaPlayer?.start()
-            startUpdatingTrackData()
-        } else {
-            restartPlayer()
+            onCompleteTrack()
         }
+        startUpdatingTrackData()
         startForeground(1, createNotification())
     }
 
@@ -172,6 +170,12 @@ class MusicPlayerService : Service() {
         mediaPlayer = null
         _currentPosition.value = 0
         startUpdatingCurrentPosition()
+    }
+
+    private fun onCompleteTrack() {
+        mediaPlayer?.setOnCompletionListener {
+            nextTrack()
+        }
     }
 
     private fun restartPlayer() {
@@ -209,7 +213,7 @@ class MusicPlayerService : Service() {
 
     private fun startUpdatingCurrentPosition() {
         currentPositionJob = CoroutineScope(Dispatchers.Main).launch {
-            while (isServiceRunning) {
+            while (true) {
                 mediaPlayer?.let {
                     _currentPosition.value = it.currentPosition
                 }

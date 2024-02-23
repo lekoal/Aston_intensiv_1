@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatImageButton
 import androidx.appcompat.widget.AppCompatSeekBar
@@ -15,6 +16,7 @@ import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.lekoal.astonintensiv1.R
 import com.lekoal.astonintensiv1.databinding.ActivityMainBinding
 import com.lekoal.astonintensiv1.domain.MusicPlayerService
 import com.lekoal.astonintensiv1.model.PlayerState
@@ -53,7 +55,7 @@ class MainActivity : AppCompatActivity() {
     private var durationJob: Job? = null
     private var positionJob: Job? = null
     private var titleJob: Job? = null
-    private var isPlayingJob: Job? = null
+    private var stateJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,32 +72,21 @@ class MainActivity : AppCompatActivity() {
         titleTV = binding.tvSongName
 
         playBtn.setOnClickListener {
-            startService(PlayerState.PLAY)
+            jobsCreate()
+            musicPlayerService?.playTrack()
         }
 
         stopBtn.setOnClickListener {
-            if (isServiceRunning()) {
-                startService(PlayerState.STOP)
-            }
+            musicPlayerService?.stopTrack()
         }
 
         nextBtn.setOnClickListener {
-            startService(PlayerState.NEXT)
+            musicPlayerService?.nextTrack()
         }
 
         prevBtn.setOnClickListener {
-            startService(PlayerState.PREV)
+            musicPlayerService?.prevTrack()
         }
-    }
-
-    override fun onStart() {
-        super.onStart()
-
-        val serviceIntent = Intent(this, MusicPlayerService::class.java)
-        if (!isServiceRunning()) {
-            startService(PlayerState.INITIAL)
-        }
-        bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
     }
 
     override fun onStop() {
@@ -106,16 +97,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun startService(playerState: PlayerState) {
-        val serviceIntent = Intent(this, MusicPlayerService::class.java).apply {
-            action = playerState.toString()
-        }
+    private fun startService() {
+        val serviceIntent = Intent(this, MusicPlayerService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent)
         } else {
             startService(serviceIntent)
         }
-        jobsCreate()
+
     }
 
     private fun checkNotificationPermission() {
@@ -141,8 +130,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        jobsCreate()
-        titleJob?.start()
+        val serviceIntent = Intent(this, MusicPlayerService::class.java)
+        if (!isServiceRunning()) {
+            startService()
+        }
+        bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
     }
 
     override fun onDestroy() {
@@ -169,8 +161,21 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        isPlayingJob = lifecycleScope.launch {
-
+        stateJob = lifecycleScope.launch {
+            musicPlayerService?.currentState?.collect {
+                Log.i("MainActivity", it.name)
+                when (it) {
+                    PlayerState.PLAY -> {
+                        playBtn.setImageResource(R.drawable.pause)
+                    }
+                    PlayerState.STOP -> {
+                        playBtn.setImageResource(R.drawable.play)
+                    }
+                    else -> {
+                        playBtn.setImageResource(R.drawable.play)
+                    }
+                }
+            }
         }
     }
 
@@ -178,6 +183,6 @@ class MainActivity : AppCompatActivity() {
         durationJob?.cancel()
         positionJob?.cancel()
         titleJob?.cancel()
-        isPlayingJob?.cancel()
+
     }
 }
