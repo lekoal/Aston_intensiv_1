@@ -37,13 +37,22 @@ class MusicPlayerService : Service() {
     private val binder = PlayerBinder()
 
     private val _currentPosition = MutableStateFlow(0)
-    var currentPosition: StateFlow<Int> = _currentPosition
+    val currentPosition: StateFlow<Int> = _currentPosition
+
+    private val _currentDuration = MutableStateFlow(0)
+    val currentDuration: StateFlow<Int> = _currentDuration
+
+    private val _currentTitle = MutableStateFlow("Track Title")
+    val currentTitle: StateFlow<String> = _currentTitle
 
     private var currentPositionJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        mediaPlayer?.setOnCompletionListener {
+            nextTrack()
+        }
     }
 
     companion object {
@@ -94,7 +103,6 @@ class MusicPlayerService : Service() {
     }
 
     override fun onBind(p0: Intent?): IBinder {
-
         return binder
     }
 
@@ -108,6 +116,7 @@ class MusicPlayerService : Service() {
             mediaPlayer = MediaPlayer.create(this, tracks[trackIndex].id)
         }
         mediaPlayer?.start()
+        startUpdatingTrackData()
         startUpdatingCurrentPosition()
     }
 
@@ -118,7 +127,6 @@ class MusicPlayerService : Service() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-
         isServiceRunning = false
         saveSPState()
     }
@@ -132,6 +140,7 @@ class MusicPlayerService : Service() {
         if (mediaPlayer?.isPlaying == true) {
             restartPlayer()
             mediaPlayer?.start()
+            startUpdatingTrackData()
         } else {
             restartPlayer()
         }
@@ -150,22 +159,26 @@ class MusicPlayerService : Service() {
         if (mediaPlayer?.isPlaying == true) {
             restartPlayer()
             mediaPlayer?.start()
+            startUpdatingTrackData()
         } else {
             restartPlayer()
         }
+        startForeground(1, createNotification())
     }
 
     private fun resetPlayer() {
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null
+        _currentPosition.value = 0
+        startUpdatingCurrentPosition()
     }
 
     private fun restartPlayer() {
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = MediaPlayer.create(this, tracks[trackIndex].id)
-
+        _currentPosition.value = 0
     }
 
     private fun createNotification(): Notification =
@@ -203,5 +216,10 @@ class MusicPlayerService : Service() {
                 delay(1000)
             }
         }
+    }
+
+    private fun startUpdatingTrackData() {
+        _currentDuration.value = mediaPlayer?.duration ?: 0
+        _currentTitle.value = tracks[trackIndex].title
     }
 }

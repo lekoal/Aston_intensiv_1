@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.os.IBinder
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatImageButton
+import androidx.appcompat.widget.AppCompatSeekBar
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -31,6 +32,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var nextBtn: AppCompatImageButton
     private lateinit var prevBtn: AppCompatImageButton
     private lateinit var titleTV: AppCompatTextView
+    private lateinit var progressIndicator: AppCompatSeekBar
 
     private var musicPlayerService: MusicPlayerService? = null
     private var serviceBound = false
@@ -60,31 +62,12 @@ class MainActivity : AppCompatActivity() {
 
         checkNotificationPermission()
 
-        val progressIndicator = binding.songProgressIndicator
-
-
-
+        progressIndicator = binding.songProgressIndicator
         playBtn = binding.playerBtnPlayPause
         stopBtn = binding.playerBtnStop
         nextBtn = binding.playerBtnNext
         prevBtn = binding.playerBtnPrevious
         titleTV = binding.tvSongName
-
-        durationJob = lifecycleScope.launch {
-
-        }
-
-        positionJob = lifecycleScope.launch {
-
-        }
-
-        titleJob = lifecycleScope.launch {
-
-        }
-
-        isPlayingJob = lifecycleScope.launch {
-
-        }
 
         playBtn.setOnClickListener {
             startService(PlayerState.PLAY)
@@ -103,7 +86,6 @@ class MainActivity : AppCompatActivity() {
         prevBtn.setOnClickListener {
             startService(PlayerState.PREV)
         }
-
     }
 
     override fun onStart() {
@@ -133,6 +115,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             startService(serviceIntent)
         }
+        jobsCreate()
     }
 
     private fun checkNotificationPermission() {
@@ -158,12 +141,43 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-
+        jobsCreate()
+        titleJob?.start()
     }
 
     override fun onDestroy() {
+        jobsCancel()
         super.onDestroy()
+    }
+
+    private fun jobsCreate() {
+        durationJob = lifecycleScope.launch {
+            musicPlayerService?.currentDuration?.collect {
+                progressIndicator.max = it
+            }
+        }
+
+        positionJob = lifecycleScope.launch {
+            musicPlayerService?.currentPosition?.collect {
+                progressIndicator.progress = it
+            }
+        }
+
+        titleJob = lifecycleScope.launch {
+            musicPlayerService?.currentTitle?.collect {
+                titleTV.text = it
+            }
+        }
+
+        isPlayingJob = lifecycleScope.launch {
+
+        }
+    }
+
+    private fun jobsCancel() {
         durationJob?.cancel()
         positionJob?.cancel()
+        titleJob?.cancel()
+        isPlayingJob?.cancel()
     }
 }
