@@ -8,7 +8,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
-import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatImageButton
 import androidx.appcompat.widget.AppCompatSeekBar
@@ -164,14 +163,15 @@ class MainActivity : AppCompatActivity() {
 
         stateJob = lifecycleScope.launch {
             musicPlayerService?.currentState?.collect {
-                Log.i("MainActivity", it.name)
                 when (it) {
                     PlayerState.PLAY -> {
                         playBtn.setImageResource(R.drawable.pause)
                     }
+
                     PlayerState.STOP -> {
                         playBtn.setImageResource(R.drawable.play)
                     }
+
                     else -> {
                         playBtn.setImageResource(R.drawable.play)
                     }

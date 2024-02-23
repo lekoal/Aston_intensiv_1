@@ -258,9 +258,9 @@ class MusicPlayerService : Service() {
             val serviceChannel = NotificationChannel(
                 CHANNEL_ID,
                 "Foreground Service",
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_HIGH
             )
-            val manager = getSystemService(NotificationManager::class.java)
+            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(serviceChannel)
         }
     }
@@ -290,6 +290,6 @@ class MusicPlayerService : Service() {
     private fun getPendingIntent(action: String): PendingIntent {
         val intent = Intent(this, MusicPlayerService::class.java)
         intent.action = action
-        return PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+        return PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
     }
 }
