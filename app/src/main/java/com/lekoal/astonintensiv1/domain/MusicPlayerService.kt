@@ -3,6 +3,7 @@ package com.lekoal.astonintensiv1.domain
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -10,6 +11,8 @@ import android.media.MediaPlayer
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import android.util.TypedValue
+import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import com.lekoal.astonintensiv1.R
 import com.lekoal.astonintensiv1.model.PlayerState
@@ -48,6 +51,8 @@ class MusicPlayerService : Service() {
 
     private var currentPositionJob: Job? = null
 
+    private var playIcon: Int = R.drawable.pause
+
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
@@ -61,6 +66,25 @@ class MusicPlayerService : Service() {
         isServiceRunning = true
         saveSPState()
         initialService()
+        intent?.let {
+            when (it.action) {
+                "Prev" -> {
+                    prevTrack()
+                }
+
+                "Play" -> {
+                    playTrack()
+                }
+
+                "Stop" -> {
+                    stopTrack()
+                }
+
+                "Next" -> {
+                    nextTrack()
+                }
+            }
+        }
         return START_STICKY
     }
 
@@ -86,11 +110,13 @@ class MusicPlayerService : Service() {
             PlayerState.PLAY -> {
                 pauseTrack()
                 _currentState.value = PlayerState.PAUSE
+                playIcon = R.drawable.play
             }
 
             PlayerState.PAUSE -> {
                 resumeTrack()
                 _currentState.value = PlayerState.PLAY
+                playIcon = R.drawable.pause
             }
 
             else -> {
@@ -107,7 +133,8 @@ class MusicPlayerService : Service() {
 
     fun stopTrack() {
         if (currentState.value == PlayerState.PLAY ||
-            currentState.value == PlayerState.PAUSE) {
+            currentState.value == PlayerState.PAUSE
+        ) {
             try {
                 stopForeground(STOP_FOREGROUND_REMOVE)
             } catch (e: Exception) {
@@ -185,13 +212,46 @@ class MusicPlayerService : Service() {
         _currentPosition.value = 0
     }
 
-    private fun createNotification(): Notification =
-        NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher_round)
-            .setContentTitle("Music Player")
-            .setContentText(tracks[trackIndex].title)
+    private fun createNotification(): Notification {
+
+        val notificationLayout = RemoteViews(packageName, R.layout.custom_notification_layot)
+        notificationLayout.setOnClickPendingIntent(
+            R.id.notification_prev_button,
+            getPendingIntent("Prev")
+        )
+        notificationLayout.setOnClickPendingIntent(
+            R.id.notification_play_button,
+            getPendingIntent("Play")
+        )
+        notificationLayout.setOnClickPendingIntent(
+            R.id.notification_stop_button,
+            getPendingIntent("Stop")
+        )
+        notificationLayout.setOnClickPendingIntent(
+            R.id.notification_next_button,
+            getPendingIntent("Next")
+        )
+        notificationLayout.setTextViewText(R.id.notification_title, "Music Player Service")
+        notificationLayout.setTextViewText(R.id.notification_track_name, tracks[trackIndex].title)
+        notificationLayout.setImageViewResource(R.id.notification_play_button, playIcon)
+        notificationLayout.setTextViewTextSize(
+            R.id.notification_title,
+            TypedValue.COMPLEX_UNIT_SP,
+            16f
+        )
+        notificationLayout.setTextViewTextSize(
+            R.id.notification_track_name,
+            TypedValue.COMPLEX_UNIT_SP,
+            14f
+        )
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setCustomContentView(notificationLayout)
+            .setSmallIcon(R.drawable.ic_music)
             .setSilent(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
+    }
+
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -225,5 +285,11 @@ class MusicPlayerService : Service() {
     private fun startUpdatingTrackData() {
         _currentDuration.value = mediaPlayer?.duration ?: 0
         _currentTitle.value = tracks[trackIndex].title
+    }
+
+    private fun getPendingIntent(action: String): PendingIntent {
+        val intent = Intent(this, MusicPlayerService::class.java)
+        intent.action = action
+        return PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
 }

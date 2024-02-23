@@ -66,6 +66,7 @@
                         android:layout_margin="@dimen/main_activity_player_button_margin"
                         android:background="@color/gray_400"
                         android:contentDescription="@string/previous_button_description"
+                        android:foreground="?attr/selectableItemBackgroundBorderless"
                         android:src="@drawable/previous"
                         android:tint="@color/gray_900" />
 
@@ -76,6 +77,7 @@
                         android:layout_margin="@dimen/main_activity_player_button_margin"
                         android:background="@color/gray_400"
                         android:contentDescription="@string/play_button_description"
+                        android:foreground="?attr/selectableItemBackgroundBorderless"
                         android:src="@drawable/play"
                         android:tint="@color/gray_900" />
 
@@ -86,6 +88,7 @@
                         android:layout_margin="@dimen/main_activity_player_button_margin"
                         android:background="@color/gray_400"
                         android:contentDescription="@string/stop_button_description"
+                        android:foreground="?attr/selectableItemBackgroundBorderless"
                         android:src="@drawable/stop"
                         android:tint="@color/gray_900" />
 
@@ -96,6 +99,7 @@
                         android:layout_margin="@dimen/main_activity_player_button_margin"
                         android:background="@color/gray_400"
                         android:contentDescription="@string/next_button_description"
+                        android:foreground="?attr/selectableItemBackgroundBorderless"
                         android:src="@drawable/next"
                         android:tint="@color/gray_900" />
 
