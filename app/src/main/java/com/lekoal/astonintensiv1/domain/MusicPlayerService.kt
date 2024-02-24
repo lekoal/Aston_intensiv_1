@@ -1,6 +1,5 @@
 package com.lekoal.astonintensiv1.domain
 
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -11,7 +10,7 @@ import android.media.MediaPlayer
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
-import android.util.TypedValue
+import android.util.Log
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import com.lekoal.astonintensiv1.R
@@ -51,7 +50,7 @@ class MusicPlayerService : Service() {
 
     private var currentPositionJob: Job? = null
 
-    private var playIcon: Int = R.drawable.pause
+    private var playIcon: Int = R.drawable.play
 
     override fun onCreate() {
         super.onCreate()
@@ -102,36 +101,39 @@ class MusicPlayerService : Service() {
     }
 
     private fun initialService() {
-        startForeground(1, createNotification())
+        createNotification()
     }
 
     fun playTrack() {
+        Log.i("MPService", _currentState.value.name)
         when (currentState.value) {
             PlayerState.PLAY -> {
                 pauseTrack()
-                _currentState.value = PlayerState.PAUSE
                 playIcon = R.drawable.play
+                _currentState.value = PlayerState.PAUSE
             }
 
             PlayerState.PAUSE -> {
                 resumeTrack()
-                _currentState.value = PlayerState.PLAY
                 playIcon = R.drawable.pause
+                _currentState.value = PlayerState.PLAY
             }
 
             else -> {
                 mediaPlayer = MediaPlayer.create(this, tracks[trackIndex].id)
                 mediaPlayer?.start()
                 onCompleteTrack()
+                playIcon = R.drawable.pause
                 _currentState.value = PlayerState.PLAY
             }
         }
         startUpdatingTrackData()
         startUpdatingCurrentPosition()
-        startForeground(1, createNotification())
+        createNotification()
     }
 
     fun stopTrack() {
+        playIcon = R.drawable.play
         if (currentState.value == PlayerState.PLAY ||
             currentState.value == PlayerState.PAUSE
         ) {
@@ -145,6 +147,7 @@ class MusicPlayerService : Service() {
             saveSPState()
             _currentState.value = PlayerState.STOP
         }
+        createNotification()
     }
 
     private fun pauseTrack() {
@@ -170,7 +173,7 @@ class MusicPlayerService : Service() {
             onCompleteTrack()
         }
         startUpdatingTrackData()
-        startForeground(1, createNotification())
+        createNotification()
     }
 
     private fun saveSPState() {
@@ -188,7 +191,7 @@ class MusicPlayerService : Service() {
             onCompleteTrack()
         }
         startUpdatingTrackData()
-        startForeground(1, createNotification())
+        createNotification()
     }
 
     private fun resetPlayer() {
@@ -212,7 +215,9 @@ class MusicPlayerService : Service() {
         _currentPosition.value = 0
     }
 
-    private fun createNotification(): Notification {
+    private fun createNotification() {
+        val notificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         val notificationLayout = RemoteViews(packageName, R.layout.custom_notification_layot)
         notificationLayout.setOnClickPendingIntent(
@@ -234,22 +239,13 @@ class MusicPlayerService : Service() {
         notificationLayout.setTextViewText(R.id.notification_title, "Music Player Service")
         notificationLayout.setTextViewText(R.id.notification_track_name, tracks[trackIndex].title)
         notificationLayout.setImageViewResource(R.id.notification_play_button, playIcon)
-        notificationLayout.setTextViewTextSize(
-            R.id.notification_title,
-            TypedValue.COMPLEX_UNIT_SP,
-            16f
-        )
-        notificationLayout.setTextViewTextSize(
-            R.id.notification_track_name,
-            TypedValue.COMPLEX_UNIT_SP,
-            14f
-        )
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setCustomContentView(notificationLayout)
             .setSmallIcon(R.drawable.ic_music)
             .setSilent(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
+        notificationManager.notify(1, notification)
     }
 
 
