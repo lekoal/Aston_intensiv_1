@@ -1,17 +1,21 @@
 package com.lekoal.astonintensiv1.domain
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.widget.RemoteViews
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import com.lekoal.astonintensiv1.R
 import com.lekoal.astonintensiv1.model.PlayerState
 import com.lekoal.astonintensiv1.model.Tracks
@@ -50,11 +54,7 @@ class MusicPlayerService : Service() {
     private var currentPositionJob: Job? = null
 
     private var playIcon: Int = R.drawable.play
-
-    override fun onCreate() {
-        super.onCreate()
-        createNotificationChannel()
-    }
+    private var playText = "Play"
 
     companion object {
         private const val CHANNEL_ID = "MusicPlayerChannel"
@@ -108,11 +108,13 @@ class MusicPlayerService : Service() {
             PlayerState.PLAY -> {
                 pauseTrack()
                 playIcon = R.drawable.play
+                playText = "Play"
                 _currentState.value = PlayerState.PAUSE
             }
 
             PlayerState.PAUSE -> {
                 resumeTrack()
+                playText = "Pause"
                 playIcon = R.drawable.pause
                 _currentState.value = PlayerState.PLAY
             }
@@ -121,6 +123,7 @@ class MusicPlayerService : Service() {
                 mediaPlayer = MediaPlayer.create(this, tracks[trackIndex].id)
                 mediaPlayer?.start()
                 onCompleteTrack()
+                playText = "Pause"
                 playIcon = R.drawable.pause
                 _currentState.value = PlayerState.PLAY
             }
@@ -214,36 +217,63 @@ class MusicPlayerService : Service() {
     }
 
     private fun createNotification() {
-        val notificationManager =
-            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        createNotificationChannel()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val notificationManager = NotificationManagerCompat.from(this)
+            val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_music)
+                .setContentTitle("Music Player Service")
+                .setContentText(tracks[trackIndex].title)
+                .addAction(R.drawable.previous, "Prev", getPendingIntent("Prev"))
+                .addAction(playIcon, playText, getPendingIntent("Play"))
+                .addAction(R.drawable.stop, "Stop", getPendingIntent("Stop"))
+                .addAction(R.drawable.next, "Next", getPendingIntent("Next"))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setStyle(androidx.media.app.NotificationCompat.MediaStyle())
+                .setSilent(true)
+                .build()
+            if (ActivityCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) { return }
+            notificationManager.notify(1, notification)
+        } else {
+            val notificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationLayout = RemoteViews(packageName, R.layout.custom_notification_layot)
+            notificationLayout.setOnClickPendingIntent(
+                R.id.notification_prev_button,
+                getPendingIntent("Prev")
+            )
+            notificationLayout.setOnClickPendingIntent(
+                R.id.notification_play_button,
+                getPendingIntent("Play")
+            )
+            notificationLayout.setOnClickPendingIntent(
+                R.id.notification_stop_button,
+                getPendingIntent("Stop")
+            )
+            notificationLayout.setOnClickPendingIntent(
+                R.id.notification_next_button,
+                getPendingIntent("Next")
+            )
+            notificationLayout.setTextViewText(R.id.notification_title, "Music Player Service")
+            notificationLayout.setTextViewText(
+                R.id.notification_track_name,
+                tracks[trackIndex].title
+            )
+            notificationLayout.setImageViewResource(R.id.notification_play_button, playIcon)
+            val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+                .setCustomContentView(notificationLayout)
+                .setSmallIcon(R.drawable.ic_music)
+                .setSilent(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .build()
+            notificationManager.notify(1, notification)
+        }
 
-        val notificationLayout = RemoteViews(packageName, R.layout.custom_notification_layot)
-        notificationLayout.setOnClickPendingIntent(
-            R.id.notification_prev_button,
-            getPendingIntent("Prev")
-        )
-        notificationLayout.setOnClickPendingIntent(
-            R.id.notification_play_button,
-            getPendingIntent("Play")
-        )
-        notificationLayout.setOnClickPendingIntent(
-            R.id.notification_stop_button,
-            getPendingIntent("Stop")
-        )
-        notificationLayout.setOnClickPendingIntent(
-            R.id.notification_next_button,
-            getPendingIntent("Next")
-        )
-        notificationLayout.setTextViewText(R.id.notification_title, "Music Player Service")
-        notificationLayout.setTextViewText(R.id.notification_track_name, tracks[trackIndex].title)
-        notificationLayout.setImageViewResource(R.id.notification_play_button, playIcon)
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setCustomContentView(notificationLayout)
-            .setSmallIcon(R.drawable.ic_music)
-            .setSilent(true)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .build()
-        notificationManager.notify(1, notification)
+
     }
 
 
