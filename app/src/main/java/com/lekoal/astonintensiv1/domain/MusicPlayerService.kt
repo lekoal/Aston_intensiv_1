@@ -105,7 +105,6 @@ class MusicPlayerService : Service() {
     }
 
     fun playTrack() {
-        Log.i("MPService", _currentState.value.name)
         when (currentState.value) {
             PlayerState.PLAY -> {
                 pauseTrack()
