@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="main_activity_layout_padding">30dp</dimen>
+    <dimen name="main_activity_card_corner_radius">10dp</dimen>
+    <dimen name="main_activity_card_elevation">5dp</dimen>
+    <dimen name="main_activity_outer_carp_padding">6dp</dimen>
+    <dimen name="main_activity_player_layout_padding">20dp</dimen>
+    <dimen name="main_activity_elements_top_margin">10dp</dimen>
+    <dimen name="main_activity_player_button_size">50dp</dimen>
+    <dimen name="main_activity_player_button_margin">10dp</dimen>
+    <dimen name="song_name_text_size">24sp</dimen>
+</resources>

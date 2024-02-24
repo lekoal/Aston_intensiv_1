@@ -1,3 +1,9 @@
 <resources>
-    <string name="app_name">AstonIntensiv1</string>
+    <string name="app_name">AstonIntensivOne</string>
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="song_temp_name">Song Name</string>
+    <string name="previous_button_description">Previous song</string>
+    <string name="play_button_description">Play / pause</string>
+    <string name="stop_button_description">Stop playing</string>
+    <string name="next_button_description">Next song</string>
 </resources>
